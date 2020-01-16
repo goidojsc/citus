@@ -604,6 +604,7 @@ PreprocessAlterTableAddDropFKey(AlterTableStmt *alterTableStatement)
 			ErrorIfUnsupportedAlterAddDropFKeyBetweenReferecenceAndLocalTable(
 				referencingRelationOid,
 				referencedRelationOid,
+				AT_AddConstraint,
 				constraint);
 
 			/*
@@ -691,6 +692,7 @@ PreprocessAlterTableAddDropFKey(AlterTableStmt *alterTableStatement)
 				ErrorIfUnsupportedAlterAddDropFKeyBetweenReferecenceAndLocalTable(
 					referencingRelationOid,
 					referencedRelationOid,
+					AT_DropConstraint,
 					constraint);
 
 				/* rewrite referenced table name */
@@ -750,6 +752,7 @@ PreprocessAlterTableAddDropFKey(AlterTableStmt *alterTableStatement)
 				ErrorIfUnsupportedAlterAddDropFKeyBetweenReferecenceAndLocalTable(
 					referencingRelationOid,
 					candidateReferenceTableOid,
+					AT_DropConstraint,
 					constraint);
 			}
 		}
