@@ -73,9 +73,11 @@
 #include "postgres.h"
 #include "miscadmin.h"
 
+#include "distributed/commands/utility_hook.h"
 #include "distributed/citus_custom_scan.h"
 #include "distributed/citus_ruleutils.h"
 #include "distributed/deparse_shard_query.h"
+#include "distributed/listutils.h"
 #include "distributed/local_executor.h"
 #include "distributed/multi_executor.h"
 #include "distributed/master_protocol.h"
@@ -83,6 +85,7 @@
 #include "distributed/relation_access_tracking.h"
 #include "distributed/remote_commands.h" /* to access LogRemoteCommands */
 #include "distributed/transaction_management.h"
+#include "distributed/worker_protocol.h"
 #include "executor/tstoreReceiver.h"
 #include "executor/tuptable.h"
 #if PG_VERSION_NUM >= 120000
@@ -111,6 +114,7 @@ static void LogLocalCommand(Task *task);
 static void ExtractParametersForLocalExecution(ParamListInfo paramListInfo,
 											   Oid **parameterTypes,
 											   const char ***parameterValues);
+static void LocallyExecuteUtilityCommand(const char *utilityCommand);
 
 
 /*
@@ -226,6 +230,39 @@ ExtractParametersForLocalExecution(ParamListInfo paramListInfo, Oid **parameterT
 {
 	ExtractParametersFromParamList(paramListInfo, parameterTypes,
 								   parameterValues, true);
+}
+
+
+void
+ExecuteLocalUtilityTaskList(List *localTaskList)
+{
+	Task *localTask = NULL;
+
+	foreach_ptr(localTask, localTaskList)
+	{
+		const char *localTaskQuery = TaskQueryString(localTask);
+
+		if (!TransactionAccessedLocalPlacement &&
+			localTask->anchorShardId != INVALID_SHARD_ID)
+		{
+			TransactionAccessedLocalPlacement = true;
+		}
+
+		LogLocalCommand(localTask);
+
+		LocallyExecuteUtilityCommand(localTaskQuery);
+	}
+}
+
+
+static void
+LocallyExecuteUtilityCommand(const char *utilityCommand)
+{
+	Node *utilityCommandNode = ParseTreeNode(utilityCommand);
+
+	CitusProcessUtility(utilityCommandNode, utilityCommand, PROCESS_UTILITY_TOPLEVEL,
+						NULL,
+						None_Receiver, NULL);
 }
 
 
