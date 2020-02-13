@@ -525,6 +525,27 @@ ShouldExecuteTasksLocally(List *taskList)
 
 
 /*
+ * AnyTaskAccessesLocalNode returns true if task within the task list accesses
+ * local node.
+ */
+bool
+AnyTaskAccessesLocalNode(List *taskList)
+{
+	Task *task = NULL;
+
+	foreach_ptr(task, taskList)
+	{
+		if (TaskAccessesLocalNode(task))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
+/*
  * TaskAccessesLocalNode returns true if any placements of the task reside on the
  * node that we're executing the query.
  */
@@ -549,7 +570,22 @@ TaskAccessesLocalNode(Task *task)
 
 
 /*
- * ErrorIfTransactionAccessedPlacementsLocally() errors out if a local query on any shard
+ * ErrorIfTransactionAndAnyTaskAccessedPlacementsLocally errors out if a local query
+ * on any shard has already been executed in the same transaction and any of the tasks
+ * in the taskList will access a local placement.
+ */
+void
+ErrorIfTransactionAndAnyTaskAccessedPlacementsLocally(List *taskList)
+{
+	if (AnyTaskAccessesLocalNode(taskList))
+	{
+		ErrorIfTransactionAccessedPlacementsLocally();
+	}
+}
+
+
+/*
+ * ErrorIfTransactionAccessedPlacementsLocally errors out if a local query on any shard
  * has already been executed in the same transaction.
  *
  * This check is required because Citus currently hasn't implemented local execution
