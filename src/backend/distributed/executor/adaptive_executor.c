@@ -799,13 +799,46 @@ AdjustDistributedExecutionAfterLocalExecution(DistributedExecution *execution)
 
 /*
  * ExecuteUtilityTaskListWithoutResults is a wrapper around executing task
- * list for utility commands. It simply calls in adaptive executor's task
- * execution function.
+ * list for utility commands. For remote tasks, it simply calls in adaptive
+ * executor's task execution function. For local tasks (if any), kicks Process
+ * Utility via CitusProcessUtility for utility commands. As some local utility
+ * commands can trigger udf calls, this function also processes those udf calls
+ * locally.
  */
 void
-ExecuteUtilityTaskListWithoutResults(List *taskList)
+ExecuteUtilityTaskListWithoutResults(List *taskList, bool tryLocalExecution)
 {
-	ExecuteTaskList(ROW_MODIFY_NONE, taskList, MaxAdaptiveExecutorPoolSize);
+	RowModifyLevel rowModifyLevel = ROW_MODIFY_NONE;
+
+	List *localTaskList = NIL;
+	List *remoteTaskList = NIL;
+
+	bool readOnlyPlan = !TaskListModifiesDatabase(rowModifyLevel, taskList);
+
+	/* divide tasks into two if tryLocalExecution is set to true */
+	if (tryLocalExecution)
+	{
+		/* set local (if any) & remote tasks */
+		ExtractLocalAndRemoteTasks(readOnlyPlan, taskList, &localTaskList,
+								   &remoteTaskList);
+	}
+
+	if (ShouldExecuteTasksLocally(localTaskList))
+	{
+		/* execute local tasks */
+		ExecuteLocalUtilityTaskList(localTaskList);
+	}
+	else
+	{
+		/* all tasks should be executed via remote connections */
+		remoteTaskList = taskList;
+	}
+
+	/* execute remote tasks if any */
+	if (list_length(remoteTaskList) > 0)
+	{
+		ExecuteTaskList(rowModifyLevel, remoteTaskList, MaxAdaptiveExecutorPoolSize);
+	}
 }
 
 
