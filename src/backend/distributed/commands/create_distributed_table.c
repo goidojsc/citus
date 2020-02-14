@@ -795,7 +795,7 @@ EnsureTableCanBeColocatedWith(Oid relationId, char replicationModel,
 	DistTableCacheEntry *sourceTableEntry = DistributedTableCacheEntry(sourceRelationId);
 	char sourceDistributionMethod = sourceTableEntry->partitionMethod;
 	char sourceReplicationModel = sourceTableEntry->replicationModel;
-	Var *sourceDistributionColumn = DistPartitionKey(sourceRelationId);
+	Var *sourceDistributionColumn = ForceDistPartitionKey(sourceRelationId);
 
 	if (sourceDistributionMethod != DISTRIBUTE_BY_HASH)
 	{

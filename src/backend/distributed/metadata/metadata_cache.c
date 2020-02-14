@@ -572,6 +572,22 @@ LookupNodeByNodeId(uint32 nodeId)
 
 
 /*
+ * ForceLookupNodeByNodeId returns a worker node by nodeId or errors out if the
+ * node cannot be found.
+ */
+WorkerNode *
+ForceLookupNodeByNodeId(uint32 nodeId)
+{
+	WorkerNode *node = LookupNodeByNodeId(nodeId);
+	if (node == NULL)
+	{
+		ereport(ERROR, (errmsg("node %d could not be found", nodeId)));
+	}
+	return node;
+}
+
+
+/*
  * LookupNodeForGroup searches the WorkerNodeHash for a worker which is a member of the
  * given group and also readable (a primary if we're reading from primaries, a secondary
  * if we're reading from secondaries). If such a node does not exist it emits an
@@ -613,20 +629,19 @@ LookupNodeForGroup(int32 groupId)
 		{
 			ereport(ERROR, (errmsg("node group %d does not have a primary node",
 								   groupId)));
-			return NULL;
+			break;
 		}
 
 		case USE_SECONDARY_NODES_ALWAYS:
 		{
 			ereport(ERROR, (errmsg("node group %d does not have a secondary node",
 								   groupId)));
-			return NULL;
+			break;
 		}
 
 		default:
 		{
 			ereport(FATAL, (errmsg("unrecognized value for use_secondary_nodes")));
-			return NULL;
 		}
 	}
 }
@@ -1785,8 +1800,6 @@ AvailableExtensionVersion(void)
 
 	ereport(ERROR, (errcode(ERRCODE_OBJECT_NOT_IN_PREREQUISITE_STATE),
 					errmsg("citus extension is not found")));
-
-	return NULL;
 }
 
 
