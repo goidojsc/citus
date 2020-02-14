@@ -114,7 +114,8 @@ static void LogLocalCommand(Task *task);
 static void ExtractParametersForLocalExecution(ParamListInfo paramListInfo,
 											   Oid **parameterTypes,
 											   const char ***parameterValues);
-static void LocallyExecuteUtilityCommand(const char *utilityCommand);
+static void LocallyExecuteUtilityTask(const char *utilityCommand);
+static void LocallyExecuteQuery(const char *funcCallCommand);
 
 
 /*
@@ -250,19 +251,48 @@ ExecuteLocalUtilityTaskList(List *localTaskList)
 
 		LogLocalCommand(localTask);
 
-		LocallyExecuteUtilityCommand(localTaskQuery);
+		LocallyExecuteUtilityTask(localTaskQuery);
 	}
 }
 
 
 static void
-LocallyExecuteUtilityCommand(const char *utilityCommand)
+LocallyExecuteUtilityTask(const char *localTaskQuery)
 {
-	Node *utilityCommandNode = ParseTreeNode(utilityCommand);
+	Node *localTaskQueryNode = ParseTreeNode(localTaskQuery);
 
-	CitusProcessUtility(utilityCommandNode, utilityCommand, PROCESS_UTILITY_TOPLEVEL,
-						NULL,
-						None_Receiver, NULL);
+	if (IsA(localTaskQueryNode, SelectStmt))
+	{
+		/*
+		 * Actually, the query passed to this function would mostly be
+		 * a utility command to be executed locally. However, some utility
+		 * commands do trigger udf calls (e.g worker_apply_shard_ddl_command)
+		 * to execute commands in a generic way. But as we support local
+		 * execution of utility tasks, we should also process those udf
+		 * calls locally as well. In that case, we simply execute the query
+		 * implying the udf call in this conditional block.
+		 */
+
+		LocallyExecuteQuery(localTaskQuery);
+	}
+	else
+	{
+		/*
+		 * It is a regular utility command, execute it locally via process
+		 * utility
+		 */
+
+		CitusProcessUtility(localTaskQueryNode, localTaskQuery, PROCESS_UTILITY_TOPLEVEL,
+							NULL,
+							None_Receiver, NULL);
+	}
+}
+
+
+static void
+LocallyExecuteQuery(const char *localTaskQuery)
+{
+	ExecuteQueryStringIntoDestReceiver(localTaskQuery, NULL, None_Receiver);
 }
 
 
