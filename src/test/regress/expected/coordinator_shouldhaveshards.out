@@ -107,9 +107,8 @@ NOTICE:  executing the command locally: SELECT y FROM coordinator_shouldhaveshar
 (1 row)
 
 ALTER TABLE test DROP COLUMN z;
-ERROR:  cannot execute command because a local execution has accessed a placement in the transaction
-DETAIL:  Some parallel commands cannot be executed if a previous command has already been executed locally
-HINT:  Try re-running the transaction with "SET LOCAL citus.enable_local_execution TO OFF;"
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1503000, 'coordinator_shouldhaveshards', 'ALTER TABLE test DROP COLUMN z;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1503003, 'coordinator_shouldhaveshards', 'ALTER TABLE test DROP COLUMN z;')
 ROLLBACK;
 BEGIN;
 ALTER TABLE test DROP COLUMN z;
@@ -122,6 +121,12 @@ SELECT y FROM test WHERE x = 1;
 END;
 DELETE FROM test;
 DROP TABLE test;
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS coordinator_shouldhaveshards.test_1503000 CASCADE
+CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
+PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS coordinator_shouldhaveshards.test_1503003 CASCADE
+CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
+PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
 DROP SCHEMA coordinator_shouldhaveshards CASCADE;
 SELECT 1 FROM master_set_node_property('localhost', :master_port, 'shouldhaveshards', false);
  ?column?
