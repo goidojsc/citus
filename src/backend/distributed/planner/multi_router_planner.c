@@ -1383,7 +1383,11 @@ TargetEntryChangesValue(TargetEntry *targetEntry, Var *column, FromExpr *joinTre
 		Const *newValue = (Const *) setExpr;
 		List *restrictClauseList = WhereClauseList(joinTree);
 		OpExpr *equalityExpr = MakeOpExpression(column, BTEqualStrategyNumber);
-		Const *rightConst = (Const *) get_rightop((Expr *) equalityExpr);
+		Node *rightOp = get_rightop((Expr *) equalityExpr);
+
+		Assert(rightOp != NULL);
+		Assert(IsA(rightOp, Const));
+		Const *rightConst = (Const *) rightOp;
 
 		rightConst->constvalue = newValue->constvalue;
 		rightConst->constisnull = newValue->constisnull;
@@ -2723,9 +2727,10 @@ BuildRoutesForInsert(Query *query, DeferredErrorMessage **planningError)
 			OpExpr *equalityExpr = MakeOpExpression(partitionColumn,
 													BTEqualStrategyNumber);
 			Node *rightOp = get_rightop((Expr *) equalityExpr);
-			Const *rightConst = (Const *) rightOp;
 
+			Assert(rightOp != NULL);
 			Assert(IsA(rightOp, Const));
+			Const *rightConst = (Const *) rightOp;
 
 			rightConst->constvalue = partitionValueConst->constvalue;
 			rightConst->constisnull = partitionValueConst->constisnull;

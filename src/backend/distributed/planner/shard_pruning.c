@@ -540,8 +540,6 @@ PrunableExpressionsWalker(Node *node, ClauseWalkerContext *context)
 	{
 		OpExpr *opClause = (OpExpr *) node;
 		PruningInstance *prune = context->currentPruningInstance;
-		Node *leftOperand = NULL;
-		Node *rightOperand = NULL;
 		Const *constantClause = NULL;
 		Var *varClause = NULL;
 
@@ -551,14 +549,10 @@ PrunableExpressionsWalker(Node *node, ClauseWalkerContext *context)
 			prune->addedToPruningInstances = true;
 		}
 
-		if (list_length(opClause->args) == 2)
+		Node *leftOperand;
+		Node *rightOperand;
+		if (BinaryOpExpression((Expr *) opClause, &leftOperand, &rightOperand))
 		{
-			leftOperand = get_leftop((Expr *) opClause);
-			rightOperand = get_rightop((Expr *) opClause);
-
-			leftOperand = strip_implicit_coercions(leftOperand);
-			rightOperand = strip_implicit_coercions(rightOperand);
-
 			if (IsA(rightOperand, Const) && IsA(leftOperand, Var))
 			{
 				constantClause = (Const *) rightOperand;
