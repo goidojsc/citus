@@ -2322,7 +2322,7 @@ CurrentDatabaseName(void)
 		char *databaseName = get_database_name(MyDatabaseId);
 		if (databaseName == NULL)
 		{
-			return NULL;
+			ereport(ERROR, (errmsg("database that is connected to does not exist")));
 		}
 
 		strlcpy(MetadataCache.databaseName, databaseName, NAMEDATALEN);
