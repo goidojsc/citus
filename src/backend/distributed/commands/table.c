@@ -884,6 +884,8 @@ ErrorIfUnsupportedConstraint(Relation relation, char distributionMethod,
 		return;
 	}
 
+	Assert(distributionColumn != NULL);
+
 	char *relationName = RelationGetRelationName(relation);
 	List *indexOidList = RelationGetIndexList(relation);
 

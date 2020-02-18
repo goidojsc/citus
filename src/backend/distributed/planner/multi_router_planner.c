@@ -1967,6 +1967,7 @@ SingleShardModifyTaskList(Query *query, uint64 jobId, List *relationShardList,
 
 	ExtractRangeTableEntryWalker((Node *) query, &rangeTableList);
 	RangeTblEntry *updateOrDeleteRTE = GetUpdateOrDeleteRTE(query);
+	Assert(updateOrDeleteRTE != NULL);
 
 	DistTableCacheEntry *modificationTableCacheEntry = DistributedTableCacheEntry(
 		updateOrDeleteRTE->relid);
@@ -2401,6 +2402,11 @@ TargetShardIntervalForFastPathQuery(Query *query, bool *isMultiShardQuery,
 		DistTableCacheEntry *cache = DistributedTableCacheEntry(relationId);
 		ShardInterval *shardInterval =
 			FindShardInterval(inputDistributionKeyValue->constvalue, cache);
+		if (shardInterval == NULL)
+		{
+			ereport(ERROR, (errmsg(
+								"could not find shardinterval to which to send the query")));
+		}
 
 		if (outputPartitionValueConst != NULL)
 		{
