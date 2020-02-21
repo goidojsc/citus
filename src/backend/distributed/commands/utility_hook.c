@@ -701,12 +701,12 @@ ExecuteDistributedDDLJob(DDLJob *ddlJob)
 	/*
 	 * If it is a local placement of a distributed table, then execute the
 	 * DDL command locally.
-	 * Here we set tryLocalExecution to true regardless of whether the DDL
-	 * command is run for/on a distributed table as
+	 * Here we set localExecutionSupported to true regardless of whether the
+	 * DDL command is run for/on a distributed table as
 	 * ExecuteUtilityTaskListWithoutResults would already identify those
 	 * DDL tasks not accessesing any of the local placements.
 	 */
-	bool tryLocalExecution = true;
+	bool localExecutionSupported = true;
 
 	if (!ddlJob->concurrentIndexCmd)
 	{
@@ -729,7 +729,7 @@ ExecuteDistributedDDLJob(DDLJob *ddlJob)
 		}
 
 		/* use adaptive executor when enabled */
-		ExecuteUtilityTaskListWithoutResults(ddlJob->taskList, tryLocalExecution);
+		ExecuteUtilityTaskListWithoutResults(ddlJob->taskList, localExecutionSupported);
 	}
 	else
 	{
@@ -741,7 +741,8 @@ ExecuteDistributedDDLJob(DDLJob *ddlJob)
 		PG_TRY();
 		{
 			/* use adaptive executor when enabled */
-			ExecuteUtilityTaskListWithoutResults(ddlJob->taskList, tryLocalExecution);
+			ExecuteUtilityTaskListWithoutResults(ddlJob->taskList,
+												 localExecutionSupported);
 
 			if (shouldSyncMetadata)
 			{

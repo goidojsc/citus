@@ -806,7 +806,7 @@ AdjustDistributedExecutionAfterLocalExecution(DistributedExecution *execution)
  * locally.
  */
 void
-ExecuteUtilityTaskListWithoutResults(List *taskList, bool tryLocalExecution)
+ExecuteUtilityTaskListWithoutResults(List *taskList, bool localExecutionSupported)
 {
 	RowModifyLevel rowModifyLevel = ROW_MODIFY_NONE;
 
@@ -815,8 +815,8 @@ ExecuteUtilityTaskListWithoutResults(List *taskList, bool tryLocalExecution)
 
 	bool readOnlyPlan = !TaskListModifiesDatabase(rowModifyLevel, taskList);
 
-	/* divide tasks into two if tryLocalExecution is set to true */
-	if (tryLocalExecution)
+	/* divide tasks into two if localExecutionSupported is set to true */
+	if (localExecutionSupported)
 	{
 		/* set local (if any) & remote tasks */
 		ExtractLocalAndRemoteTasks(readOnlyPlan, taskList, &localTaskList,
