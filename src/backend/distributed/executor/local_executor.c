@@ -115,7 +115,7 @@ static void ExtractParametersForLocalExecution(ParamListInfo paramListInfo,
 											   Oid **parameterTypes,
 											   const char ***parameterValues);
 static void LocallyExecuteUtilityTask(const char *utilityCommand);
-static void LocallyExecuteQuery(const char *funcCallCommand);
+static void LocallyExecuteUdfTaskQuery(Query *localUdfCommandQuery);
 
 
 /*
@@ -221,9 +221,10 @@ ExecuteLocalTaskList(CitusScanState *scanState, List *taskList)
 
 
 /*
- * ExtractParametersForLocalExecution extracts parameter types and values from
- * the given ParamListInfo structure, and fills parameter type and value arrays.
- * It does not change the oid of custom types, because the query will be run locally.
+ * ExtractParametersForLocalExecution extracts parameter types and values
+ * from the given ParamListInfo structure, and fills parameter type and
+ * value arrays. It does not change the oid of custom types, because the
+ * query will be run locally.
  */
 static void
 ExtractParametersForLocalExecution(ParamListInfo paramListInfo, Oid **parameterTypes,
@@ -234,6 +235,12 @@ ExtractParametersForLocalExecution(ParamListInfo paramListInfo, Oid **parameterT
 }
 
 
+/*
+ * ExecuteLocalUtilityTaskList executes a list of tasks locally. This function
+ * also logs local execution notice for each task and sets
+ * TransactionAccessedLocalPlacement to true for next set of possible queries
+ * & commands within the current transaction block. See the comment in function.
+ */
 void
 ExecuteLocalUtilityTaskList(List *localTaskList)
 {
@@ -241,58 +248,115 @@ ExecuteLocalUtilityTaskList(List *localTaskList)
 
 	foreach_ptr(localTask, localTaskList)
 	{
-		const char *localTaskQuery = TaskQueryString(localTask);
+		const char *localTaskQueryCommand = TaskQueryString(localTask);
 
-		if (!TransactionAccessedLocalPlacement &&
-			localTask->anchorShardId != INVALID_SHARD_ID)
+		if (localTask->anchorShardId != INVALID_SHARD_ID)
 		{
+			/*
+			 * If anchor shard id is valid, then we really access a local
+			 * placement. We should register it to force the local execution
+			 * of the following commands withing the current transcation.
+			 * It can be a coordinated transaction or a transaction that is
+			 * initiated explicitly.
+			 */
 			TransactionAccessedLocalPlacement = true;
 		}
 
 		LogLocalCommand(localTask);
 
-		LocallyExecuteUtilityTask(localTaskQuery);
+		/* execute the local utility task finally */
+		LocallyExecuteUtilityTask(localTaskQueryCommand);
 	}
 }
 
 
+/*
+ * LocallyExecuteUtilityTask executes the given local task query. Given
+ * query would mostly be a utility command as the name of the function
+ * implies. However, some utility commands can trigger udf calls to finish
+ * their execution. See the comment in function.
+ */
 static void
-LocallyExecuteUtilityTask(const char *localTaskQuery)
+LocallyExecuteUtilityTask(const char *localTaskQueryCommand)
 {
-	Node *localTaskQueryNode = ParseTreeNode(localTaskQuery);
+	RawStmt *localTaskRawStmt = (RawStmt *) ParseTreeRawStmt(localTaskQueryCommand);
 
-	if (IsA(localTaskQueryNode, SelectStmt))
+	Node *localTaskRawParseTree = localTaskRawStmt->stmt;
+
+	/*
+	 * Actually, the query passed to this function would mostly be a
+	 * utility command to be executed locally. However, some utility
+	 * commands do trigger udf calls (e.g worker_apply_shard_ddl_command)
+	 * to execute commands in a generic way. But as we support local
+	 * execution of utility tasks, we should also process those udf
+	 * calls locally as well. In that case, we simply execute the query
+	 * implying the udf call in below conditional block.
+	 */
+
+	if (IsA(localTaskRawParseTree, SelectStmt))
 	{
-		/*
-		 * Actually, the query passed to this function would mostly be
-		 * a utility command to be executed locally. However, some utility
-		 * commands do trigger udf calls (e.g worker_apply_shard_ddl_command)
-		 * to execute commands in a generic way. But as we support local
-		 * execution of utility tasks, we should also process those udf
-		 * calls locally as well. In that case, we simply execute the query
-		 * implying the udf call in this conditional block.
-		 */
+		SelectStmt *selectStmt = (SelectStmt *) localTaskRawParseTree;
 
-		LocallyExecuteQuery(localTaskQuery);
-	}
-	else
-	{
-		/*
-		 * It is a regular utility command, execute it locally via process
-		 * utility
-		 */
+		bool foundNonUdfSelectTarget = false;
 
-		CitusProcessUtility(localTaskQueryNode, localTaskQuery, PROCESS_UTILITY_TOPLEVEL,
-							NULL,
-							None_Receiver, NULL);
+		ResTarget *resTarget = NULL;
+
+		/* ensure that the SELECT query does only include udf targets */
+		foreach_ptr(resTarget, selectStmt->targetList)
+		{
+			Node *resTargetValue = resTarget->val;
+
+			if (!IsA(resTargetValue, FuncCall))
+			{
+				foundNonUdfSelectTarget = true;
+				break;
+			}
+		}
+
+		if (foundNonUdfSelectTarget)
+		{
+			/*
+			 * A SELECT query triggered by a utility command can only include
+			 * udf calls in it. If assertions are not active, we would already
+			 * error out in CitusProcessUtility function. In debug mode, it
+			 * would be appropriate to early error out here.
+			 */
+			Assert(false);
+		}
+		else
+		{
+			/* we have no additional parameters to rewrite the UDF call RawStmt */
+			Query *localUdfTaskQuery = RewriteRawQueryStmt(localTaskRawStmt,
+														   localTaskQueryCommand, NULL,
+														   0);
+
+			LocallyExecuteUdfTaskQuery(localUdfTaskQuery);
+
+			return;
+		}
 	}
+
+	/*
+	 * It is a regular utility command, execute it locally via process
+	 * utility
+	 */
+	CitusProcessUtility(localTaskRawParseTree, localTaskQueryCommand,
+						PROCESS_UTILITY_TOPLEVEL,
+						NULL,
+						None_Receiver, NULL);
 }
 
 
+/*
+ * LocallyExecuteUdfTaskQuery executes the given udf command locally. Local udf
+ * command is simply a "SELECT udf_call()" query and so it cannot be executed
+ * via process utility.
+ */
 static void
-LocallyExecuteQuery(const char *localTaskQuery)
+LocallyExecuteUdfTaskQuery(Query *localUdfTaskQuery)
 {
-	ExecuteQueryStringIntoDestReceiver(localTaskQuery, NULL, None_Receiver);
+	/* we do not need any destination receivers to execute it */
+	ExecuteQueryIntoDestReceiver(localUdfTaskQuery, NULL, None_Receiver);
 }
 
 
