@@ -76,10 +76,10 @@ citus_truncate_trigger(PG_FUNCTION_ARGS)
 		 * If it is a local placement of a distributed table, then execute
 		 * the TRUNCATE command locally.
 		 */
-		bool tryLocalExecution = true;
+		bool localExecutionSupported = true;
 
 		/* use adaptive executor when enabled */
-		ExecuteUtilityTaskListWithoutResults(taskList, tryLocalExecution);
+		ExecuteUtilityTaskListWithoutResults(taskList, localExecutionSupported);
 	}
 
 	PG_RETURN_DATUM(PointerGetDatum(NULL));
