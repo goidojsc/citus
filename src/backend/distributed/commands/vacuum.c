@@ -109,8 +109,11 @@ PostprocessVacuumStmt(VacuumStmt *vacuumStmt, const char *vacuumCommand)
 			List *vacuumColumnList = VacuumColumnList(vacuumStmt, relationIndex);
 			List *taskList = VacuumTaskList(relationId, vacuumParams, vacuumColumnList);
 
-			/* local execution is not implemented for this code path */
-			bool localExecutionSupported = false;
+			/*
+			 * If it is a local placement of a distributed table, then execute
+			 * the VACUUM command locally.
+			 */
+			bool localExecutionSupported = true;
 
 			/* use adaptive executor when enabled */
 			ExecuteUtilityTaskListWithoutResults(taskList, localExecutionSupported);
