@@ -80,8 +80,8 @@ static List * ShardsMatchingDeleteCriteria(Oid relationId, List *shardList,
 										   Node *deleteCriteria);
 static int DropShards(Oid relationId, char *schemaName, char *relationName,
 					  List *deletableShardIntervalList);
-static bool ExecuteDropShardPlacementCommandLocally(ShardPlacement *shardPlacement,
-													char *dropShardPlacementCommand);
+static List * SingleDropTaskListForLocalPlacement(ShardPlacement *shardPlacement,
+												  char *dropShardPlacementCommand);
 static void ExecuteDropShardPlacementCommandRemotely(ShardPlacement *shardPlacement,
 													 const char *shardRelationName,
 													 const char *dropShardPlacementCommand);
@@ -435,16 +435,22 @@ DropShards(Oid relationId, char *schemaName, char *relationName,
 			 * If it is a local placement of a distributed table, then try to
 			 * execute the DROP command locally.
 			 */
-
-			bool dropTaskLocallyExecuted = false;
+			bool dropTaskExecutedLocally = false;
 
 			if (shardPlacementGroupId == localGroupId)
 			{
-				dropTaskLocallyExecuted = ExecuteDropShardPlacementCommandLocally(
+				List *localPlacementTaskList = SingleDropTaskListForLocalPlacement(
 					shardPlacement, dropShardPlacementCommand);
+
+				if (ShouldExecuteTasksLocally(localPlacementTaskList))
+				{
+					ExecuteLocalUtilityTaskList(localPlacementTaskList);
+
+					dropTaskExecutedLocally = true;
+				}
 			}
 
-			if (dropTaskLocallyExecuted == false)
+			if (dropTaskExecutedLocally == false)
 			{
 				/*
 				 * Either it was not a local placement or we could not use
@@ -480,13 +486,13 @@ DropShards(Oid relationId, char *schemaName, char *relationName,
 
 
 /*
- * ExecuteDropShardPlacementCommandLocally prepares the task to DROP the given
- * shard placement locally, executes that task if it can and returns true.
- * If it cannot execute that task (see ShouldExecuteTasksLocally), returns false.
+ * SingleDropTaskListForLocalPlacement creates the task to DROP the given shard
+ * placement locally and returns that task within a single element list to be
+ * used directly within the local execution logic.
  */
-static bool
-ExecuteDropShardPlacementCommandLocally(ShardPlacement *shardPlacement,
-										char *dropShardPlacementCommand)
+static List *
+SingleDropTaskListForLocalPlacement(ShardPlacement *shardPlacement,
+									char *dropShardPlacementCommand)
 {
 	Assert(shardPlacement != NULL);
 
@@ -504,14 +510,7 @@ ExecuteDropShardPlacementCommandLocally(ShardPlacement *shardPlacement,
 
 	List *localPlacementTaskList = list_make1(localPlacementTask);
 
-	if (ShouldExecuteTasksLocally(localPlacementTaskList))
-	{
-		ExecuteLocalUtilityTaskList(localPlacementTaskList);
-
-		return true;
-	}
-
-	return false;
+	return localPlacementTaskList;
 }
 
 

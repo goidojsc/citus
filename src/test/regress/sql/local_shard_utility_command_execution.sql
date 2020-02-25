@@ -14,6 +14,8 @@ SET citus.shard_replication_factor TO 1;
 SET citus.log_remote_commands TO OFF;
 SET citus.log_local_commands TO ON;
 
+SET citus.next_shard_id TO 1500000;
+
 CREATE SCHEMA local_commands_test_schema;
 SET search_path TO local_commands_test_schema;
 

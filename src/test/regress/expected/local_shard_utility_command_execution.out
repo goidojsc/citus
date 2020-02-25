@@ -10,6 +10,7 @@ RESET client_min_messages;
 SET citus.shard_replication_factor TO 1;
 SET citus.log_remote_commands TO OFF;
 SET citus.log_local_commands TO ON;
+SET citus.next_shard_id TO 1500000;
 CREATE SCHEMA local_commands_test_schema;
 SET search_path TO local_commands_test_schema;
 SET citus.shard_COUNT TO 32;
@@ -50,7 +51,7 @@ SELECT create_distributed_table('dist_table', 'a');
 ALTER TABLE dist_table ADD CONSTRAINT fkey FOREIGN KEY(a) REFERENCES ref_table(a);
 -- insert some data
 INSERT INTO ref_table VALUES(1);
-NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1250015 (a) VALUES (1)
+NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1500000 (a) VALUES (1)
 INSERT INTO dist_table VALUES(1);
 -- Currently, we support local execution of TRUNCATE commands for all kinds
 -- of distributed tables except the APPCOMMIT tables. Hence, cascading to
@@ -59,29 +60,29 @@ INSERT INTO dist_table VALUES(1);
 -- since we locally truncated ref_table's shards
 TRUNCATE ref_table CASCADE;
 NOTICE:  truncate cascades to table "dist_table"
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.ref_table_1250015 CASCADE
-NOTICE:  truncate cascades to table "dist_table_1250016"
-NOTICE:  truncate cascades to table "dist_table_1250019"
-NOTICE:  truncate cascades to table "dist_table_1250022"
-NOTICE:  truncate cascades to table "dist_table_1250025"
-NOTICE:  truncate cascades to table "dist_table_1250028"
-NOTICE:  truncate cascades to table "dist_table_1250031"
-NOTICE:  truncate cascades to table "dist_table_1250034"
-NOTICE:  truncate cascades to table "dist_table_1250037"
-NOTICE:  truncate cascades to table "dist_table_1250040"
-NOTICE:  truncate cascades to table "dist_table_1250043"
-NOTICE:  truncate cascades to table "dist_table_1250046"
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250016 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250019 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250022 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250025 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250028 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250031 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250034 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250037 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250040 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250043 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250046 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.ref_table_1500000 CASCADE
+NOTICE:  truncate cascades to table "dist_table_1500001"
+NOTICE:  truncate cascades to table "dist_table_1500004"
+NOTICE:  truncate cascades to table "dist_table_1500007"
+NOTICE:  truncate cascades to table "dist_table_1500010"
+NOTICE:  truncate cascades to table "dist_table_1500013"
+NOTICE:  truncate cascades to table "dist_table_1500016"
+NOTICE:  truncate cascades to table "dist_table_1500019"
+NOTICE:  truncate cascades to table "dist_table_1500022"
+NOTICE:  truncate cascades to table "dist_table_1500025"
+NOTICE:  truncate cascades to table "dist_table_1500028"
+NOTICE:  truncate cascades to table "dist_table_1500031"
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500001 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500004 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500007 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500010 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500013 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500016 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500019 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500022 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500025 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500028 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500031 CASCADE
 -- show that TRUNCATE is successfull
 SELECT COUNT(*) FROM ref_table, dist_table;
  count
@@ -91,30 +92,30 @@ SELECT COUNT(*) FROM ref_table, dist_table;
 
 -- insert some data
 INSERT INTO ref_table VALUES(1);
-NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1250015 (a) VALUES (1)
+NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1500000 (a) VALUES (1)
 INSERT INTO dist_table VALUES(1);
 -- As SELECT accesses local placements of reference table, TRUNCATE would also be
 -- forced to local execution even if they operate on different tables.
 BEGIN;
   SELECT COUNT(*) FROM ref_table;
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM local_commands_test_schema.ref_table_1250015 ref_table
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM local_commands_test_schema.ref_table_1500000 ref_table
  count
 ---------------------------------------------------------------------
      1
 (1 row)
 
   TRUNCATE dist_table;
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250016 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250019 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250022 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250025 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250028 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250031 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250034 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250037 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250040 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250043 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250046 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500001 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500004 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500007 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500010 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500013 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500016 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500019 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500022 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500025 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500028 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500031 CASCADE
 COMMIT;
 -- show that TRUNCATE is successfull
 SELECT COUNT(*) FROM dist_table;
@@ -125,9 +126,9 @@ SELECT COUNT(*) FROM dist_table;
 
 -- insert some data
 INSERT INTO ref_table VALUES(2);
-NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1250015 (a) VALUES (2)
+NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1500000 (a) VALUES (2)
 INSERT INTO dist_table VALUES(2);
-NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.dist_table_1250040 (a) VALUES (2)
+NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.dist_table_1500025 (a) VALUES (2)
 -- However, SELECT would access local placements via remote connections for regular
 -- distributed tables, TRUNCATE would also be executed remotely.
 BEGIN;
@@ -148,9 +149,9 @@ SELECT COUNT(*) FROM dist_table;
 
 -- insert some data
 INSERT INTO ref_table VALUES(3);
-NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1250015 (a) VALUES (3)
+NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1500000 (a) VALUES (3)
 INSERT INTO dist_table VALUES(3);
-NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.dist_table_1250031 (a) VALUES (3)
+NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.dist_table_1500016 (a) VALUES (3)
 -- TRUNCATE on dist_table (note that: again no cascade here) would
 -- just be handled via remote executions even on its local shards
 TRUNCATE dist_table;
@@ -163,7 +164,7 @@ SELECT COUNT(*) FROM dist_table;
 
 -- insert some data
 INSERT INTO ref_table VALUES(4);
-NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1250015 (a) VALUES (4)
+NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1500000 (a) VALUES (4)
 -- However, creating a dist. table is handled by remote connections.
 -- Hence, the commands following it (INSERT & TRUNCATE) would also be
 -- handled remotely.
@@ -181,7 +182,7 @@ BEGIN;
 COMMIT;
 -- show that TRUNCATE is successfull
 SELECT COUNT(*) FROM ref_table_1;
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM local_commands_test_schema.ref_table_1_1250048 ref_table_1
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM local_commands_test_schema.ref_table_1_1500033 ref_table_1
  count
 ---------------------------------------------------------------------
      0
@@ -204,33 +205,33 @@ HINT:  Try re-running the transaction with "SET LOCAL citus.multi_shard_modify_m
 COMMIT;
 -- insert some data
 INSERT INTO ref_table VALUES(7);
-NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1250015 (a) VALUES (7)
+NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1500000 (a) VALUES (7)
 INSERT INTO dist_table VALUES(7);
 -- we can TRUNCATE those two tables within the same command
 TRUNCATE ref_table, dist_table;
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.ref_table_1250015 CASCADE
-NOTICE:  truncate cascades to table "dist_table_1250016"
-NOTICE:  truncate cascades to table "dist_table_1250019"
-NOTICE:  truncate cascades to table "dist_table_1250022"
-NOTICE:  truncate cascades to table "dist_table_1250025"
-NOTICE:  truncate cascades to table "dist_table_1250028"
-NOTICE:  truncate cascades to table "dist_table_1250031"
-NOTICE:  truncate cascades to table "dist_table_1250034"
-NOTICE:  truncate cascades to table "dist_table_1250037"
-NOTICE:  truncate cascades to table "dist_table_1250040"
-NOTICE:  truncate cascades to table "dist_table_1250043"
-NOTICE:  truncate cascades to table "dist_table_1250046"
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250016 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250019 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250022 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250025 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250028 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250031 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250034 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250037 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250040 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250043 CASCADE
-NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1250046 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.ref_table_1500000 CASCADE
+NOTICE:  truncate cascades to table "dist_table_1500001"
+NOTICE:  truncate cascades to table "dist_table_1500004"
+NOTICE:  truncate cascades to table "dist_table_1500007"
+NOTICE:  truncate cascades to table "dist_table_1500010"
+NOTICE:  truncate cascades to table "dist_table_1500013"
+NOTICE:  truncate cascades to table "dist_table_1500016"
+NOTICE:  truncate cascades to table "dist_table_1500019"
+NOTICE:  truncate cascades to table "dist_table_1500022"
+NOTICE:  truncate cascades to table "dist_table_1500025"
+NOTICE:  truncate cascades to table "dist_table_1500028"
+NOTICE:  truncate cascades to table "dist_table_1500031"
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500001 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500004 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500007 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500010 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500013 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500016 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500019 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500022 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500025 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500028 CASCADE
+NOTICE:  executing the command locally: TRUNCATE TABLE local_commands_test_schema.dist_table_1500031 CASCADE
 -- show that TRUNCATE is successfull
 SELECT COUNT(*) FROM ref_table, dist_table;
  count
@@ -249,45 +250,45 @@ HINT:  Use DROP ... CASCADE to drop the dependent objects too.
 -- drop those two tables locally
 -- observe triggered master_drop_all_shards calls are also executed locally
 DROP TABLE ref_table, dist_table;
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250016 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500001 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250019 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500004 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250022 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500007 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250025 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500010 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250028 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500013 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250031 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500016 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250034 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500019 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250037 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500022 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250040 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500025 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250043 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500028 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250046 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500031 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.ref_table_1250015 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.ref_table_1500000 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
 -- drop the other standalone table locally as well
 DROP TABLE ref_table_1;
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.ref_table_1_1250048 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.ref_table_1_1500033 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
 -- show that DROP commands are successfull
@@ -307,14 +308,14 @@ SELECT create_reference_table('ref_table');
 -- Hence we should execute the DROP command locally as well.
 BEGIN;
   SELECT COUNT(*) FROM ref_table;
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM local_commands_test_schema.ref_table_1250049 ref_table
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM local_commands_test_schema.ref_table_1500034 ref_table
  count
 ---------------------------------------------------------------------
      0
 (1 row)
 
   DROP TABLE ref_table;
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.ref_table_1250049 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.ref_table_1500034 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
 COMMIT;
@@ -338,37 +339,37 @@ ALTER TABLE dist_table ADD CONSTRAINT fkey FOREIGN KEY(a) REFERENCES ref_table(a
 -- out.
 BEGIN;
   DROP TABLE dist_table CASCADE;
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250051 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500036 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250054 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500039 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250057 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500042 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250060 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500045 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250063 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500048 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250066 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500051 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250069 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500054 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250072 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500057 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250075 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500060 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250078 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500063 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250081 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500066 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
   TRUNCATE dist_table;
@@ -418,37 +419,37 @@ SELECT 1 FROM pg_tables where tablename='another_dist_table';
 -- we execute DROP commands locally if current transaction is not connected to local
 -- node already. Hence, below DROP will also be executed locally.
 DROP TABLE dist_table;
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250051 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500036 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250054 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500039 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250057 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500042 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250060 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500045 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250063 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500048 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250066 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500051 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250069 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500054 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250072 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500057 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250075 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500060 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250078 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500063 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250081 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500066 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
 -- show that DROP command is successfull
@@ -469,44 +470,44 @@ ALTER TABLE dist_table ADD CONSTRAINT fkey FOREIGN KEY(a) REFERENCES ref_table(a
 -- it would also be executed locally
 BEGIN;
   SELECT COUNT(*) FROM ref_table;
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM local_commands_test_schema.ref_table_1250050 ref_table
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM local_commands_test_schema.ref_table_1500035 ref_table
  count
 ---------------------------------------------------------------------
      0
 (1 row)
 
   DROP TABLE dist_table CASCADE;
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250115 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500100 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250118 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500103 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250121 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500106 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250124 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500109 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250127 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500112 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250130 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500115 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250133 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500118 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250136 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500121 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250139 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500124 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250142 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500127 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250145 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500130 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
 ROLLBACK;
@@ -531,7 +532,7 @@ SELECT create_reference_table('ref_table_1');
 -- below block should execute successfully
 BEGIN;
   SELECT COUNT(*) FROM ref_table;
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM local_commands_test_schema.ref_table_1250050 ref_table
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM local_commands_test_schema.ref_table_1500035 ref_table
  count
 ---------------------------------------------------------------------
      0
@@ -540,50 +541,50 @@ NOTICE:  executing the command locally: SELECT count(*) AS count FROM local_comm
   -- as SELECT above runs locally and as now we support local execution of DDL commands,
   -- below DDL should be able to define foreign key constraint successfully
   ALTER TABLE ref_table ADD CONSTRAINT fkey FOREIGN KEY(a) REFERENCES ref_table_1(a);
-NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1250050, 'local_commands_test_schema', 1250147, 'local_commands_test_schema', 'ALTER TABLE ref_table ADD CONSTRAINT fkey FOREIGN KEY(a) REFERENCES ref_table_1(a);')
+NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1500035, 'local_commands_test_schema', 1500132, 'local_commands_test_schema', 'ALTER TABLE ref_table ADD CONSTRAINT fkey FOREIGN KEY(a) REFERENCES ref_table_1(a);')
   -- insert some data
   INSERT INTO ref_table_1 VALUES (1);
-NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1_1250147 (a) VALUES (1)
+NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1_1500132 (a) VALUES (1)
   INSERT INTO ref_table_1 VALUES (2);
-NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1_1250147 (a) VALUES (2)
+NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1_1500132 (a) VALUES (2)
   INSERT INTO ref_table VALUES (1);
-NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1250050 (a) VALUES (1)
+NOTICE:  executing the command locally: INSERT INTO local_commands_test_schema.ref_table_1500035 (a) VALUES (1)
   -- chain foreign key constraints
   -- local execution should be observed here as well
   ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);
-NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1250115, 'local_commands_test_schema', 1250050, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
-NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1250118, 'local_commands_test_schema', 1250050, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
-NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1250121, 'local_commands_test_schema', 1250050, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
-NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1250124, 'local_commands_test_schema', 1250050, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
-NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1250127, 'local_commands_test_schema', 1250050, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
-NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1250130, 'local_commands_test_schema', 1250050, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
-NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1250133, 'local_commands_test_schema', 1250050, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
-NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1250136, 'local_commands_test_schema', 1250050, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
-NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1250139, 'local_commands_test_schema', 1250050, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
-NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1250142, 'local_commands_test_schema', 1250050, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
-NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1250145, 'local_commands_test_schema', 1250050, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
+NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1500100, 'local_commands_test_schema', 1500035, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
+NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1500103, 'local_commands_test_schema', 1500035, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
+NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1500106, 'local_commands_test_schema', 1500035, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
+NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1500109, 'local_commands_test_schema', 1500035, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
+NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1500112, 'local_commands_test_schema', 1500035, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
+NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1500115, 'local_commands_test_schema', 1500035, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
+NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1500118, 'local_commands_test_schema', 1500035, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
+NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1500121, 'local_commands_test_schema', 1500035, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
+NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1500124, 'local_commands_test_schema', 1500035, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
+NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1500127, 'local_commands_test_schema', 1500035, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
+NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1500130, 'local_commands_test_schema', 1500035, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD CONSTRAINT fkey1 FOREIGN KEY(a) REFERENCES ref_table(a);')
   INSERT INTO dist_table VALUES (1);
   DELETE FROM ref_table_1 WHERE a=2;
-NOTICE:  executing the command locally: DELETE FROM local_commands_test_schema.ref_table_1_1250147 ref_table_1 WHERE (a OPERATOR(pg_catalog.=) 2)
+NOTICE:  executing the command locally: DELETE FROM local_commands_test_schema.ref_table_1_1500132 ref_table_1 WHERE (a OPERATOR(pg_catalog.=) 2)
   -- add another column to dist_table
   -- note that we execute below DDL locally as well
   ALTER TABLE ref_table ADD b int;
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250050, 'local_commands_test_schema', 'ALTER TABLE ref_table ADD b int;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500035, 'local_commands_test_schema', 'ALTER TABLE ref_table ADD b int;')
   -- define self reference
   ALTER TABLE ref_table ADD CONSTRAINT fkey2 FOREIGN KEY(b) REFERENCES ref_table(a);
-NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1250050, 'local_commands_test_schema', 1250050, 'local_commands_test_schema', 'ALTER TABLE ref_table ADD CONSTRAINT fkey2 FOREIGN KEY(b) REFERENCES ref_table(a);')
+NOTICE:  executing the command locally: SELECT worker_apply_inter_shard_ddl_command (1500035, 'local_commands_test_schema', 1500035, 'local_commands_test_schema', 'ALTER TABLE ref_table ADD CONSTRAINT fkey2 FOREIGN KEY(b) REFERENCES ref_table(a);')
   SELECT COUNT(*) FROM ref_table_1, ref_table, dist_table;
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1250115 dist_table JOIN local_commands_test_schema.ref_table_1_1250147 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1250050 ref_table ON (true)) WHERE true
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1250118 dist_table JOIN local_commands_test_schema.ref_table_1_1250147 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1250050 ref_table ON (true)) WHERE true
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1250121 dist_table JOIN local_commands_test_schema.ref_table_1_1250147 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1250050 ref_table ON (true)) WHERE true
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1250124 dist_table JOIN local_commands_test_schema.ref_table_1_1250147 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1250050 ref_table ON (true)) WHERE true
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1250127 dist_table JOIN local_commands_test_schema.ref_table_1_1250147 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1250050 ref_table ON (true)) WHERE true
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1250130 dist_table JOIN local_commands_test_schema.ref_table_1_1250147 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1250050 ref_table ON (true)) WHERE true
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1250133 dist_table JOIN local_commands_test_schema.ref_table_1_1250147 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1250050 ref_table ON (true)) WHERE true
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1250136 dist_table JOIN local_commands_test_schema.ref_table_1_1250147 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1250050 ref_table ON (true)) WHERE true
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1250139 dist_table JOIN local_commands_test_schema.ref_table_1_1250147 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1250050 ref_table ON (true)) WHERE true
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1250142 dist_table JOIN local_commands_test_schema.ref_table_1_1250147 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1250050 ref_table ON (true)) WHERE true
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1250145 dist_table JOIN local_commands_test_schema.ref_table_1_1250147 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1250050 ref_table ON (true)) WHERE true
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1500100 dist_table JOIN local_commands_test_schema.ref_table_1_1500132 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1500035 ref_table ON (true)) WHERE true
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1500103 dist_table JOIN local_commands_test_schema.ref_table_1_1500132 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1500035 ref_table ON (true)) WHERE true
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1500106 dist_table JOIN local_commands_test_schema.ref_table_1_1500132 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1500035 ref_table ON (true)) WHERE true
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1500109 dist_table JOIN local_commands_test_schema.ref_table_1_1500132 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1500035 ref_table ON (true)) WHERE true
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1500112 dist_table JOIN local_commands_test_schema.ref_table_1_1500132 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1500035 ref_table ON (true)) WHERE true
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1500115 dist_table JOIN local_commands_test_schema.ref_table_1_1500132 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1500035 ref_table ON (true)) WHERE true
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1500118 dist_table JOIN local_commands_test_schema.ref_table_1_1500132 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1500035 ref_table ON (true)) WHERE true
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1500121 dist_table JOIN local_commands_test_schema.ref_table_1_1500132 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1500035 ref_table ON (true)) WHERE true
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1500124 dist_table JOIN local_commands_test_schema.ref_table_1_1500132 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1500035 ref_table ON (true)) WHERE true
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1500127 dist_table JOIN local_commands_test_schema.ref_table_1_1500132 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1500035 ref_table ON (true)) WHERE true
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_commands_test_schema.dist_table_1500130 dist_table JOIN local_commands_test_schema.ref_table_1_1500132 ref_table_1 ON (true)) JOIN local_commands_test_schema.ref_table_1500035 ref_table ON (true)) WHERE true
  count
 ---------------------------------------------------------------------
      1
@@ -591,43 +592,43 @@ NOTICE:  executing the command locally: SELECT count(*) AS count FROM ((local_co
 
   -- observe DROP on a self-referencing table also works
   DROP TABLE ref_table_1, ref_table, dist_table;
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250115 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500100 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250118 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500103 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250121 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500106 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250124 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500109 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250127 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500112 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250130 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500115 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250133 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500118 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250136 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500121 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250139 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500124 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250142 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500127 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1250145 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.dist_table_1500130 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.ref_table_1250050 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.ref_table_1500035 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
-NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.ref_table_1_1250147 CASCADE
+NOTICE:  executing the command locally: DROP TABLE IF EXISTS local_commands_test_schema.ref_table_1_1500132 CASCADE
 CONTEXT:  SQL statement "SELECT master_drop_all_shards(v_obj.objid, v_obj.schema_name, v_obj.object_name)"
 PL/pgSQL function citus_drop_trigger() line 19 at PERFORM
   -- show that DROP command is successfull
@@ -660,13 +661,13 @@ ROLLBACK;
 -- However, below ALTER TABLE SET SCHEMA command will be executed locally
 BEGIN;
   ALTER TABLE ref_table SET SCHEMA foo_schema;
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250050, 'local_commands_test_schema', 'ALTER TABLE local_commands_test_schema.ref_table SET SCHEMA foo_schema;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500035, 'local_commands_test_schema', 'ALTER TABLE local_commands_test_schema.ref_table SET SCHEMA foo_schema;')
   -- show that ALTER TABLE SET SCHEMA is successfull
   SELECT tablename FROM pg_tables where schemaname='foo_schema' ORDER BY tablename;
      tablename
 ---------------------------------------------------------------------
  ref_table
- ref_table_1250050
+ ref_table_1500035
 (2 rows)
 
 ROLLBACK;
@@ -674,7 +675,7 @@ ROLLBACK;
 BEGIN;
   -- here this SELECT will enforce the whole block for local execution
   SELECT COUNT(*) FROM ref_table;
-NOTICE:  executing the command locally: SELECT count(*) AS count FROM local_commands_test_schema.ref_table_1250050 ref_table
+NOTICE:  executing the command locally: SELECT count(*) AS count FROM local_commands_test_schema.ref_table_1500035 ref_table
  count
 ---------------------------------------------------------------------
      0
@@ -682,29 +683,29 @@ NOTICE:  executing the command locally: SELECT count(*) AS count FROM local_comm
 
   -- execute bunch of DDL & DROP commands succesfully
   ALTER TABLE dist_table ADD column c int;
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250115, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250118, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250121, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250124, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250127, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250130, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250133, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250136, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250139, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250142, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250145, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500100, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500103, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500106, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500109, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500112, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500115, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500118, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500121, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500124, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500127, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500130, 'local_commands_test_schema', 'ALTER TABLE dist_table ADD column c int;')
   ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250115, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250118, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250121, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250124, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250127, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250130, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250133, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250136, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250139, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250142, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
-NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1250145, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500100, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500103, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500106, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500109, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500112, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500115, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500118, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500121, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500124, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500127, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
+NOTICE:  executing the command locally: SELECT worker_apply_shard_ddl_command (1500130, 'local_commands_test_schema', 'ALTER TABLE dist_table ALTER COLUMN c SET NOT NULL;')
   -- as we create table via remote connections, below SELECT create_distributed_table
   -- would error out
   CREATE TABLE another_dist_table(a int);
@@ -724,21 +725,21 @@ SET search_path TO public;
 DROP SCHEMA local_commands_test_schema CASCADE;
 NOTICE:  drop cascades to 16 other objects
 DETAIL:  drop cascades to table local_commands_test_schema.ref_table
-drop cascades to table local_commands_test_schema.ref_table_1250050
+drop cascades to table local_commands_test_schema.ref_table_1500035
 drop cascades to table local_commands_test_schema.dist_table
-drop cascades to table local_commands_test_schema.dist_table_1250115
-drop cascades to table local_commands_test_schema.dist_table_1250118
-drop cascades to table local_commands_test_schema.dist_table_1250121
-drop cascades to table local_commands_test_schema.dist_table_1250124
-drop cascades to table local_commands_test_schema.dist_table_1250127
-drop cascades to table local_commands_test_schema.dist_table_1250130
-drop cascades to table local_commands_test_schema.dist_table_1250133
-drop cascades to table local_commands_test_schema.dist_table_1250136
-drop cascades to table local_commands_test_schema.dist_table_1250139
-drop cascades to table local_commands_test_schema.dist_table_1250142
-drop cascades to table local_commands_test_schema.dist_table_1250145
+drop cascades to table local_commands_test_schema.dist_table_1500100
+drop cascades to table local_commands_test_schema.dist_table_1500103
+drop cascades to table local_commands_test_schema.dist_table_1500106
+drop cascades to table local_commands_test_schema.dist_table_1500109
+drop cascades to table local_commands_test_schema.dist_table_1500112
+drop cascades to table local_commands_test_schema.dist_table_1500115
+drop cascades to table local_commands_test_schema.dist_table_1500118
+drop cascades to table local_commands_test_schema.dist_table_1500121
+drop cascades to table local_commands_test_schema.dist_table_1500124
+drop cascades to table local_commands_test_schema.dist_table_1500127
+drop cascades to table local_commands_test_schema.dist_table_1500130
 drop cascades to table local_commands_test_schema.ref_table_1
-drop cascades to table local_commands_test_schema.ref_table_1_1250147
+drop cascades to table local_commands_test_schema.ref_table_1_1500132
 DROP SCHEMA foo_schema;
 SELECT master_remove_node('localhost', :master_port);
  master_remove_node
