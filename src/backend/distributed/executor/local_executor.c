@@ -115,6 +115,7 @@ static void ExtractParametersForLocalExecution(ParamListInfo paramListInfo,
 											   Oid **parameterTypes,
 											   const char ***parameterValues);
 static void LocallyExecuteUtilityTask(const char *utilityCommand);
+static bool SelectStmtHasOnlyUdfTargets(SelectStmt *selectStmt);
 static void LocallyExecuteUdfTaskQuery(Query *localUdfCommandQuery);
 
 
@@ -288,62 +289,78 @@ LocallyExecuteUtilityTask(const char *localTaskQueryCommand)
 	 * utility command to be executed locally. However, some utility
 	 * commands do trigger udf calls (e.g worker_apply_shard_ddl_command)
 	 * to execute commands in a generic way. But as we support local
-	 * execution of utility tasks, we should also process those udf
+	 * execution of utility commands, we should also process those udf
 	 * calls locally as well. In that case, we simply execute the query
 	 * implying the udf call in below conditional block.
 	 */
-
-	if (IsA(localTaskRawParseTree, SelectStmt))
+	if (IsA(localTaskRawParseTree, SelectStmt) && SelectStmtHasOnlyUdfTargets(
+			(SelectStmt *) localTaskRawParseTree))
 	{
-		SelectStmt *selectStmt = (SelectStmt *) localTaskRawParseTree;
+		/* we have no additional parameters to rewrite the UDF call RawStmt */
+		Query *localUdfTaskQuery = RewriteRawQueryStmt(localTaskRawStmt,
+													   localTaskQueryCommand, NULL, 0);
 
-		bool foundNonUdfSelectTarget = false;
+		LocallyExecuteUdfTaskQuery(localUdfTaskQuery);
+	}
+	else
+	{
+		/*
+		 * It is a regular utility command or SELECT query with non-udf,
+		 * targets, then we should execute it locally via process utility.
+		 *
+		 * If it is a regular utility command, CitusProcessUtility is the
+		 * appropriate function to process that command. However, if it's
+		 * a SELECT query with non-udf targets, CitusProcessUtility would
+		 * error out as we are not expecting such SELECT queries triggered
+		 * by utility commands.
+		 */
+		CitusProcessUtility(localTaskRawParseTree, localTaskQueryCommand,
+							PROCESS_UTILITY_TOPLEVEL, NULL, None_Receiver, NULL);
+	}
+}
 
-		ResTarget *resTarget = NULL;
 
-		/* ensure that the SELECT query does only include udf targets */
-		foreach_ptr(resTarget, selectStmt->targetList)
+/*
+ * SelectStmtHasOnlyUdfTargets returns true if the given SELECT stmt does only
+ * include UDF targets. Otherwise, returns false.
+ */
+static bool
+SelectStmtHasOnlyUdfTargets(SelectStmt *selectStmt)
+{
+	Assert(selectStmt != NULL && selectStmt->targetList != NULL);
+
+	bool foundNonUdfSelectTarget = false;
+
+	ResTarget *resTarget = NULL;
+
+	foreach_ptr(resTarget, selectStmt->targetList)
+	{
+		Node *resTargetValue = resTarget->val;
+
+		if (!IsA(resTargetValue, FuncCall))
 		{
-			Node *resTargetValue = resTarget->val;
-
-			if (!IsA(resTargetValue, FuncCall))
-			{
-				foundNonUdfSelectTarget = true;
-				break;
-			}
-		}
-
-		if (foundNonUdfSelectTarget)
-		{
-			/*
-			 * A SELECT query triggered by a utility command can only include
-			 * udf calls in it. If assertions are not active, we would already
-			 * error out in CitusProcessUtility function. In debug mode, it
-			 * would be appropriate to early error out here.
-			 */
-			Assert(false);
-		}
-		else
-		{
-			/* we have no additional parameters to rewrite the UDF call RawStmt */
-			Query *localUdfTaskQuery = RewriteRawQueryStmt(localTaskRawStmt,
-														   localTaskQueryCommand, NULL,
-														   0);
-
-			LocallyExecuteUdfTaskQuery(localUdfTaskQuery);
-
-			return;
+			foundNonUdfSelectTarget = true;
+			break;
 		}
 	}
 
-	/*
-	 * It is a regular utility command, execute it locally via process
-	 * utility
-	 */
-	CitusProcessUtility(localTaskRawParseTree, localTaskQueryCommand,
-						PROCESS_UTILITY_TOPLEVEL,
-						NULL,
-						None_Receiver, NULL);
+	if (foundNonUdfSelectTarget)
+	{
+		/*
+		 * A SELECT query triggered by a utility command can only include UDF
+		 * calls in it. If assertions are not active, we would already error
+		 * out in CitusProcessUtility function by returning false here. When
+		 * assertions are enabled, it would be appropriate to early error out
+		 * here.
+		 */
+		Assert(false);
+
+		return false;
+	}
+	else
+	{
+		return true;
+	}
 }
 
 
@@ -664,14 +681,14 @@ TaskAccessesLocalNode(Task *task)
 
 
 /*
- * ErrorIfTransactionAndAnyTaskAccessedPlacementsLocally errors out if a local query
- * on any shard has already been executed in the same transaction and any of the tasks
- * in the taskList will access a local placement.
+ * ErrorIfRemoteTaskExecutionOnLocallyAccessedPlacements errors out if the
+ * current transaction already accessed local placements locally and any of
+ * the given remote tasks will access a local placement.
  */
 void
-ErrorIfTransactionAndAnyTaskAccessedPlacementsLocally(List *taskList)
+ErrorIfRemoteTaskExecutionOnLocallyAccessedPlacements(List *remoteTaskList)
 {
-	if (AnyTaskAccessesLocalNode(taskList))
+	if (AnyTaskAccessesLocalNode(remoteTaskList))
 	{
 		ErrorIfTransactionAccessedPlacementsLocally();
 	}
